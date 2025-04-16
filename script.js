@@ -5,16 +5,18 @@ const serviciosPorOficina = {
   "puerto-plata": ["Remesas", "Cambio de divisas", "Servicio al cliente"]
 };
 
-// URL de tu Google Apps Script
+// URL de tu Google Apps Script (¡ya incluida tu URL!)
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpAjM8IA3UaLCR7eM1a2WcPqBFS3Uv2MGH09wsAeAozNUb1Lnog6giGLvXxDTHRMwU/exec";
 
-// Cargar servicios cuando se selecciona oficina
+// Cargar servicios cuando se selecciona una oficina
 document.getElementById("oficina").addEventListener("change", function() {
   const oficina = this.value;
   const servicioSelect = document.getElementById("servicio");
+  
+  // Resetear opciones
   servicioSelect.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
   
-  if (serviciosPorOficina[oficina]) {
+  if (oficina && serviciosPorOficina[oficina]) {
     serviciosPorOficina[oficina].forEach(servicio => {
       const option = document.createElement("option");
       option.value = servicio;
@@ -28,9 +30,9 @@ document.getElementById("oficina").addEventListener("change", function() {
 document.getElementById("appointmentForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   
-  // Validar checkbox de términos
+  // Validar términos y condiciones
   if (!document.getElementById("terminos").checked) {
-    alert("Debes aceptar los términos y condiciones");
+    alert("Debes aceptar los términos y condiciones.");
     return;
   }
 
@@ -46,14 +48,13 @@ document.getElementById("appointmentForm").addEventListener("submit", async func
     hora: document.getElementById("hora").value
   };
 
-  // Validar campos obligatorios
-  if (!formData.nombre || !formData.cedula || !formData.correo || !formData.telefono || 
-      !formData.oficina || !formData.servicio || !formData.fecha || !formData.hora) {
-    alert("Por favor complete todos los campos requeridos");
+  // Validar campos vacíos
+  if (Object.values(formData).some(field => !field)) {
+    alert("Por favor completa todos los campos.");
     return;
   }
 
-  // Mostrar carga
+  // Deshabilitar botón para evitar múltiples envíos
   const submitBtn = this.querySelector("button[type='submit']");
   submitBtn.disabled = true;
   submitBtn.textContent = "Enviando...";
@@ -71,45 +72,48 @@ document.getElementById("appointmentForm").addEventListener("submit", async func
     const result = await response.json();
 
     if (result.success) {
-      // Mostrar confirmación
       mostrarConfirmacion(formData);
       this.reset(); // Limpiar formulario
     } else {
-      throw new Error(result.message || "Error al guardar los datos");
+      throw new Error(result.message || "Error al guardar los datos.");
     }
   } catch (error) {
     console.error("Error:", error);
-    alert(`Error al enviar el formulario: ${error.message}`);
+    alert(`Error al enviar: ${error.message}`);
   } finally {
-    // Restaurar botón
     submitBtn.disabled = false;
     submitBtn.textContent = "Reservar Cita";
   }
 });
 
-// Función para mostrar la confirmación
+// Mostrar mensaje de confirmación
 function mostrarConfirmacion(data) {
   const resultado = document.getElementById("resultado");
   resultado.innerHTML = `
-    <h3>¡Cita confirmada!</h3>
-    <p>${data.nombre}, tu cita para <strong>${data.servicio}</strong> en la oficina de 
-    <strong>${capitalizeFirstLetter(data.oficina.replace("-", " "))}</strong> ha sido programada 
-    para el ${formatDate(data.fecha)} a las ${data.hora}.</p>
-    <p>Recibirás un correo de confirmación a <strong>${data.correo}</strong>.</p>
-    <p class="small">Número de cédula: ${data.cedula}</p>
+    <h3>¡Cita registrada con éxito!</h3>
+    <p><strong>${data.nombre}</strong>, tu cita para <strong>${data.servicio}</strong> en <strong>${formatOfficeName(data.oficina)}</strong> ha sido agendada.</p>
+    <p>📅 <strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
+    <p>⏰ <strong>Hora:</strong> ${data.hora}</p>
+    <p>📧 <strong>Correo:</strong> ${data.correo}</p>
+    <p class="note">Recibirás un correo de confirmación.</p>
   `;
   resultado.classList.remove("hidden");
   resultado.scrollIntoView({ behavior: "smooth" });
 }
 
-// Funciones de ayuda
-function capitalizeFirstLetter(string) {
-  return string.split(" ").map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(" ");
+// Formatear nombre de oficina (ej: "santo-domingo" → "Santo Domingo")
+function formatOfficeName(office) {
+  return office.split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
+// Formatear fecha (ej: "2023-12-25" → "25/12/2023")
 function formatDate(dateString) {
-  const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
-  return new Date(dateString).toLocaleDateString("es-ES", options);
+  const date = new Date(dateString);
+  return date.toLocaleDateString("es-ES", { 
+    day: "2-digit", 
+    month: "2-digit", 
+    year: "numeric" 
+  });
 }
