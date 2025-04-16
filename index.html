@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion de Turnos - Banco Virtual</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Gestion de Turnos y Citas</h1>
+    <p>Reserva tu cita facilmente en cualquiera de nuestras oficinas</p>    
+  </header>
+  
+  <main class="container">
+    <form id="appointmentForm">
+      <h2> Datos Personales</h2>
+      <input type="text" id="nombre", placeholder="Nombre" required>
+      <input type="text" id="cedula" placeholder="Cedula" required>
+      <input type="email" id="correo" placeholder="Correo electronico" required>
+      <input type="tel" id="telefono" placeholder="Telefono" required>
+      
+      <h2>Detalles de la Cita</h2>
+      <label for="oficina">Selecciona una oficina:</label>
+      <select id="oficina" required>
+        <option value="">-- Selecciona --</option>
+        <option value="santo-domingo">Santo Domingo</option>
+        <option value="santiago">Santiago</option>
+        <option value="puerto-plata">Puerto Plata</option>
+      </select>
+      
+      <label for="servicio">Servicio solicitado:</label>
+      <select id="servicio" required>
+        <option value="">-- Esperando seleccion de oficina --</option>
+      </select>
+      
+      <label for="fecha">Fecha:</label>
+      <input type="date" id="fecha" required>
+
+      <label for="hora">Hora:</label>
+      <input type="time" id="hora" required>
+      
+      <label>
+        <input type="checkbox" id="terminos" required>Acepto terminos y condiciones.
+      </label>
+      
+      <button type="submit">Reservar Cita</button>
+    </form>
+      
+      <div id="resultado" class="hidden"></div>
+      </main>
+    
+    <footer>
+      <p>© 2025 Banco Virtual. Todos los derechos reservados.</p>
+    </footer>
+    
+    <script src="script.js"></script>
+  
+</body>
+</html>
