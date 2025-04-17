@@ -5,7 +5,7 @@ const CONFIG = {
     "santiago": ["Inversiones", "Gestión de tarjetas", "Consulta de movimientos"],
     "puerto-plata": ["Remesas", "Cambio de divisas", "Servicio al cliente"]
   },
-  scriptURL: "https://script.google.com/macros/s/AKfycbz1bh0GdN9nk_r8Sg0rLlQV0yEIUmmyO5mV7vinILcJnbEkyxC4zXvNw1jqLxljJx9j/exec",
+  scriptURL: "https://script.google.com/macros/s/AKfycbwXYdDxuQkAiGWGZdGiJ4FJ2ewr0domhO1reZxcULI/dev",
   corsProxies: [
     "https://cors-anywhere.herokuapp.com/",
     "https://api.codetabs.com/v1/proxy/?quest=",
