@@ -1,87 +1,64 @@
-// Configuración
-const SCRIPT_ID = "AKfycbwXYdDxuQkAiGWGZdGiJ4FJ2ewr0domhO1reZxcULI";
-const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
-const SCRIPT_URL = `${PROXY_URL}https://script.google.com/macros/s/${SCRIPT_ID}/exec`;
+// Configuración con tu URL de LocalTunnel
+const SERVER_URL = "https://open-parts-sit.loca.lt";
 
-// Función mejorada para enviar datos
-async function sendData(data) {
+// Función mejorada para enviar citas
+async function guardarCita(citaData) {
   try {
-    const response = await fetch(SCRIPT_URL, {
+    const response = await fetch(`${SERVER_URL}/citas`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-        "Origin": "https://heidegger010509.github.io"
-      },
-      body: JSON.stringify(data)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(citaData)
     });
-    
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
+
+    if (!response.ok) throw new Error(await response.text());
     return await response.json();
   } catch (error) {
-    console.error("Error sending data:", error);
-    throw error;
+    console.error("Error en guardarCita:", error);
+    throw new Error("No se pudo conectar con el servidor. Intenta más tarde.");
   }
 }
 
 // Manejo del formulario
-document.getElementById("appointmentForm").addEventListener("submit", async (e) => {
+document.getElementById("appointmentForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   
   const submitBtn = e.target.querySelector("button[type='submit']");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Enviando...";
+  const originalText = submitBtn.textContent;
   
-  const formData = {
-    nombre: document.getElementById("nombre").value.trim(),
-    cedula: document.getElementById("cedula").value.trim(),
-    correo: document.getElementById("correo").value.trim(),
-    telefono: document.getElementById("telefono").value.trim(),
-    oficina: document.getElementById("oficina").value,
-    servicio: document.getElementById("servicio").value,
-    fecha: document.getElementById("fecha").value,
-    hora: document.getElementById("hora").value,
-    origin: window.location.origin
-  };
-
   try {
-    const result = await sendData(formData);
-    
-    if (result.success) {
-      mostrarMensajeExito(result.message);
-      e.target.reset();
-    } else {
-      throw new Error(result.message || "Error del servidor");
-    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Enviando...";
+
+    const citaData = {
+      nombre: document.getElementById("nombre").value.trim(),
+      cedula: document.getElementById("cedula").value.trim(),
+      correo: document.getElementById("correo").value.trim(),
+      telefono: document.getElementById("telefono").value.trim(),
+      oficina: document.getElementById("oficina").value,
+      servicio: document.getElementById("servicio").value,
+      fecha: document.getElementById("fecha").value,
+      hora: document.getElementById("hora").value
+    };
+
+    const resultado = await guardarCita(citaData);
+    mostrarAlerta("✅ Cita registrada en SQL Server", "success");
+    e.target.reset();
   } catch (error) {
-    mostrarError(error.message);
+    mostrarAlerta(`❌ Error: ${error.message}`, "error");
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Reservar Cita";
+    submitBtn.textContent = originalText;
   }
 });
 
-// Funciones auxiliares
-function mostrarMensajeExito(mensaje) {
-  const resultado = document.getElementById("resultado");
-  resultado.innerHTML = `
-    <div class="alert success">
-      <h3>✅ Éxito</h3>
-      <p>${mensaje}</p>
-    </div>
-  `;
-  resultado.classList.remove("hidden");
-}
-
-function mostrarError(mensaje) {
-  const resultado = document.getElementById("resultado");
-  resultado.innerHTML = `
-    <div class="alert error">
-      <h3>❌ Error</h3>
-      <p>${mensaje}</p>
-      <p>Intenta nuevamente o contacta al soporte.</p>
-    </div>
-  `;
-  resultado.classList.remove("hidden");
+// Función para mostrar alertas
+function mostrarAlerta(mensaje, tipo) {
+  const alertaDiv = document.createElement("div");
+  alertaDiv.className = `alerta ${tipo}`;
+  alertaDiv.textContent = mensaje;
+  
+  const contenedor = document.getElementById("alerta-container") || document.body;
+  contenedor.prepend(alertaDiv);
+  
+  setTimeout(() => alertaDiv.remove(), 5000);
 }
