@@ -5,23 +5,23 @@ const serviciosPorOficina = {
   "puerto-plata": ["Remesas", "Cambio de divisas", "Servicio al cliente"]
 };
 
-// URL de tu Google Apps Script (¡ya incluida tu URL!)
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpAjM8IA3UaLCR7eM1a2WcPqBFS3Uv2MGH09wsAeAozNUb1Lnog6giGLvXxDTHRMwU/exec";
+// URL actualizada de tu Google Apps Script
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1bh0GdN9nk_r8Sg0rLlQV0yEIUmmyO5mV7vinILcJnbEkyxC4zXvNw1jqLxljJx9j/exec";
 
-// Cargar servicios cuando se selecciona una oficina
+// Cargar dinámicamente los servicios según la oficina seleccionada
 document.getElementById("oficina").addEventListener("change", function() {
-  const oficina = this.value;
-  const servicioSelect = document.getElementById("servicio");
+  const oficinaSeleccionada = this.value;
+  const selectServicio = document.getElementById("servicio");
   
-  // Resetear opciones
-  servicioSelect.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
+  // Limpiar opciones anteriores
+  selectServicio.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
   
-  if (oficina && serviciosPorOficina[oficina]) {
-    serviciosPorOficina[oficina].forEach(servicio => {
-      const option = document.createElement("option");
-      option.value = servicio;
-      option.textContent = servicio;
-      servicioSelect.appendChild(option);
+  if (oficinaSeleccionada && serviciosPorOficina[oficinaSeleccionada]) {
+    serviciosPorOficina[oficinaSeleccionada].forEach(servicio => {
+      const opcion = document.createElement("option");
+      opcion.value = servicio;
+      opcion.textContent = servicio;
+      selectServicio.appendChild(opcion);
     });
   }
 });
@@ -30,14 +30,14 @@ document.getElementById("oficina").addEventListener("change", function() {
 document.getElementById("appointmentForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   
-  // Validar términos y condiciones
-  if (!document.getElementById("terminos").checked) {
-    alert("Debes aceptar los términos y condiciones.");
-    return;
-  }
+  // Mostrar estado de carga
+  const botonSubmit = this.querySelector("button[type='submit']");
+  const textoOriginal = botonSubmit.textContent;
+  botonSubmit.disabled = true;
+  botonSubmit.innerHTML = '<span class="spinner"></span> Procesando...';
 
   // Obtener datos del formulario
-  const formData = {
+  const datosFormulario = {
     nombre: document.getElementById("nombre").value.trim(),
     cedula: document.getElementById("cedula").value.trim(),
     correo: document.getElementById("correo").value.trim(),
@@ -48,72 +48,96 @@ document.getElementById("appointmentForm").addEventListener("submit", async func
     hora: document.getElementById("hora").value
   };
 
-  // Validar campos vacíos
-  if (Object.values(formData).some(field => !field)) {
-    alert("Por favor completa todos los campos.");
+  // Validaciones
+  if (!document.getElementById("terminos").checked) {
+    mostrarError("Debes aceptar los términos y condiciones");
+    botonSubmit.disabled = false;
+    botonSubmit.textContent = textoOriginal;
     return;
   }
 
-  // Deshabilitar botón para evitar múltiples envíos
-  const submitBtn = this.querySelector("button[type='submit']");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Enviando...";
+  if (Object.values(datosFormulario).some(campo => !campo && campo !== 'telefono')) {
+    mostrarError("Por favor completa todos los campos obligatorios");
+    botonSubmit.disabled = false;
+    botonSubmit.textContent = textoOriginal;
+    return;
+  }
 
   try {
-    // Enviar datos a Google Sheets
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
+    // Enviar datos al servidor
+    const respuesta = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(datosFormulario)
     });
 
-    const result = await response.json();
+    const resultado = await respuesta.json();
 
-    if (result.success) {
-      mostrarConfirmacion(formData);
-      this.reset(); // Limpiar formulario
-    } else {
-      throw new Error(result.message || "Error al guardar los datos.");
+    if (!respuesta.ok || !resultado.success) {
+      throw new Error(resultado.message || "Error en el servidor");
     }
+
+    mostrarConfirmacion(datosFormulario);
+    this.reset();
+    
   } catch (error) {
-    console.error("Error:", error);
-    alert(`Error al enviar: ${error.message}`);
+    console.error("Error al enviar el formulario:", error);
+    mostrarError(`Error al guardar la cita: ${error.message}`);
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Reservar Cita";
+    botonSubmit.disabled = false;
+    botonSubmit.textContent = textoOriginal;
   }
 });
 
-// Mostrar mensaje de confirmación
-function mostrarConfirmacion(data) {
-  const resultado = document.getElementById("resultado");
-  resultado.innerHTML = `
-    <h3>¡Cita registrada con éxito!</h3>
-    <p><strong>${data.nombre}</strong>, tu cita para <strong>${data.servicio}</strong> en <strong>${formatOfficeName(data.oficina)}</strong> ha sido agendada.</p>
-    <p>📅 <strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
-    <p>⏰ <strong>Hora:</strong> ${data.hora}</p>
-    <p>📧 <strong>Correo:</strong> ${data.correo}</p>
-    <p class="note">Recibirás un correo de confirmación.</p>
+// Función para mostrar confirmación
+function mostrarConfirmacion(datos) {
+  const contenedorResultado = document.getElementById("resultado");
+  
+  contenedorResultado.innerHTML = `
+    <div class="alert success">
+      <h3>¡Cita Registrada Exitosamente!</h3>
+      <p><strong>${datos.nombre}</strong>, tu cita ha sido agendada:</p>
+      <ul class="confirmation-details">
+        <li>📌 <strong>Servicio:</strong> ${datos.servicio}</li>
+        <li>🏢 <strong>Oficina:</strong> ${formatearNombreOficina(datos.oficina)}</li>
+        <li>📅 <strong>Fecha:</strong> ${formatearFecha(datos.fecha)}</li>
+        <li>⏰ <strong>Hora:</strong> ${datos.hora}</li>
+        <li>📧 <strong>Correo:</strong> ${datos.correo}</li>
+      </ul>
+      <p class="note">Recibirás un correo de confirmación con los detalles.</p>
+    </div>
   `;
-  resultado.classList.remove("hidden");
-  resultado.scrollIntoView({ behavior: "smooth" });
+  
+  contenedorResultado.classList.remove("hidden");
+  contenedorResultado.scrollIntoView({ behavior: "smooth" });
 }
 
-// Formatear nombre de oficina (ej: "santo-domingo" → "Santo Domingo")
-function formatOfficeName(office) {
-  return office.split("-")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+// Función para mostrar errores
+function mostrarError(mensaje) {
+  const contenedorResultado = document.getElementById("resultado");
+  
+  contenedorResultado.innerHTML = `
+    <div class="alert error">
+      <h3>Error al Procesar la Solicitud</h3>
+      <p>${mensaje}</p>
+      <p>Por favor intenta nuevamente o contacta al soporte.</p>
+    </div>
+  `;
+  
+  contenedorResultado.classList.remove("hidden");
+  contenedorResultado.scrollIntoView({ behavior: "smooth" });
+}
+
+// Funciones auxiliares de formato
+function formatearNombreOficina(nombre) {
+  return nombre.split("-")
+    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
     .join(" ");
 }
 
-// Formatear fecha (ej: "2023-12-25" → "25/12/2023")
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("es-ES", { 
-    day: "2-digit", 
-    month: "2-digit", 
-    year: "numeric" 
-  });
+function formatearFecha(fechaString) {
+  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(fechaString).toLocaleDateString('es-ES', opciones);
 }
